@@ -9,20 +9,22 @@
 #import "KC2048Scene.h"
 
 @interface KC2048Scene()
+
 -(void)createBase;
--(SKShapeNode *)createBox:(NSArray *)point withColor:(SKColor *)color start:(bool)start;
 -(void)createBoxesArray:(SKSpriteNode *)box;
+-(void)createNewBox;
 -(int)determineDirection;
 -(bool)updateBoxes;
--(void)createNewBox;
--(NSArray *)pt:(int)a :(int)b;
 -(bool)transitionBoxFrom:(NSArray *)initial to:(NSArray *)final;
+-(NSArray *)pt:(int)a :(int)b;
+-(NSArray *)createBox:(NSArray *)point withColor:(SKColor *)color start:(bool)start;
+
 @end
 
 @implementation KC2048Scene{
     CGPoint startPos,endPos;
     NSArray *boxes;
-    NSMutableArray *boxesOnScreen;
+    NSMutableArray *nodesOnScreen;
     bool occupiedBoxes[4][4];
     SKColor *BASEBOXCOLOR;
 }
@@ -37,7 +39,7 @@
         
         BASEBOXCOLOR = [SKColor colorWithRed:255/255.0 green:198/255.0 blue:41/255.0 alpha:1.0];
         
-        boxesOnScreen = [NSMutableArray array];
+        nodesOnScreen = [NSMutableArray array];
         
         for (int a=0;a<4;a++)
             for (int b=0;b<4;b++)
@@ -61,17 +63,17 @@
     
     int direction[4] = {0,0,0,0};
     
-    if (startPos.x < endPos.x) direction[3]=1;
-    else direction[2]=1;
-    if (startPos.y < endPos.y) direction[1]=1;
-    else direction[0]=1;
+    if (startPos.x < endPos.x) direction[3]=(endPos.x-startPos.x);
+    else direction[2]=(startPos.x-endPos.x);
+    if (startPos.y < endPos.y) direction[1]=(endPos.y-startPos.y);
+    else direction[0]=(startPos.y-endPos.y);
     
     if (abs(startPos.x - endPos.x) > abs(startPos.y - endPos.y)) direction[1] = direction[0] = 0;
     else direction[3] = direction[2] = 0;
     
     int i;
     for (i=0;i<4;i++)
-        if (direction[i]==1)
+        if (direction[i] != 0 && direction[i] >= 15)
             return i;
     
     return -1;
@@ -101,6 +103,10 @@
      */
     
     switch ([self determineDirection]){
+            
+        // not enough of a swipe
+        case -1:
+            break;
             
         // up
         case 0:
@@ -171,7 +177,7 @@
             break;
             
         default:
-            exit(0);
+            NSLog(@"shouldn't reach here");
     }
     
     bool moved = 0;
@@ -217,12 +223,13 @@
         
         // get coords that aren't taken
         do {
-            x = arc4random()%4;
-            y = arc4random()%4;
+            x = arc4random_uniform(4);
+            y = arc4random_uniform(4);
         } while (occupiedBoxes[x][y]==1);
         
-        // adds data to boxesOnScreen, && draws the box
-        [boxesOnScreen addObject:@[[NSNumber numberWithInt:x],[NSNumber numberWithInt:y],[self createBox:boxes[x][y] withColor:[SKColor blackColor] start:0]]];
+        // adds data to nodesOnScreen, && draws the box
+        NSArray *array = [self createBox:boxes[x][y] withColor:[SKColor blackColor] start:0];
+        [nodesOnScreen addObject:@[[NSNumber numberWithInt:x],[NSNumber numberWithInt:y],array[0],array[1]]];
         occupiedBoxes[x][y] = 1;
         
     }]]]];
@@ -230,7 +237,7 @@
 }
 
 // draw a box given a point
--(SKShapeNode *)createBox:(NSArray *)point withColor:(SKColor *)color start:(bool)start {
+-(NSArray *)createBox:(NSArray *)point withColor:(SKColor *)color start:(bool)start {
     
     CGRect rect = CGRectMake([point[0] floatValue], [point[1] floatValue], [point[2] floatValue], [point[3] floatValue]);
     
@@ -240,25 +247,38 @@
     SKShapeNode *box = [SKShapeNode node];
     box.path = path;
     box.fillColor = color;
-
+    
     if (start){
     
         [self addChild:box];
+        return @[box];
         
     // fade in
     } else {
         
+        SKLabelNode *label = [SKLabelNode labelNodeWithFontNamed:@"Avenir"];
+        
+        [label setFontColor:[SKColor whiteColor]];
+        [label setFontSize:40.0];
+        [label setPosition:CGPointMake([point[0] floatValue] + [point[2] floatValue]/2.0, [point[1] floatValue] + [point[3] floatValue]/4.0)];
+        if (arc4random_uniform(101) >= 40) [label setText:@"2"];
+        else [label setText:@"4"];
+        
         box.alpha = 0.0;
-        [box runAction:[SKAction fadeInWithDuration:0.4]];
+        SKAction *action = [SKAction fadeInWithDuration:0.4];
+        
+        [box runAction:action];
+        [label runAction:action];
         [self addChild:box];
+        [self addChild:label];
+        
+        return @[box,label];
 
     }
     
-    return box;
-    
 }
 
-// transitions a box from pt to pt, updating needed variables
+// transitions a box from pt to pt, updating variables
 -(bool)transitionBoxFrom:(NSArray *)initial to:(NSArray *)final{
     
     int x1 = [initial[0] intValue], y1 = [initial[1] intValue];
@@ -266,10 +286,10 @@
     
     int c=0;
     
-    NSMutableArray *tempBoxesOnScreen = [NSMutableArray arrayWithArray:boxesOnScreen];
+    NSMutableArray *tempNodesOnScreen = [NSMutableArray arrayWithArray:nodesOnScreen];
     
     // cycle through boxes that are drawn already
-    for (NSArray *box in boxesOnScreen){
+    for (NSArray *box in nodesOnScreen){
         
         // if the coords of 'box' match our x1, x2
         if ([box[0] intValue] == x1 && [box[1] intValue] == y1){
@@ -277,13 +297,21 @@
             CGFloat dx = [boxes[x2][y2][0] floatValue] - [boxes[x1][y1][0] floatValue];
             CGFloat dy = [boxes[x2][y2][1] floatValue] - [boxes[x1][y1][1] floatValue];
             
-            SKAction *action = [SKAction moveBy:CGVectorMake(dx, dy) duration:0.3];
+            bool constantSpeed = 1;
+            float d;
+            
+            if (constantSpeed){
+                d = abs(x2-x1)/3.0;
+                if (!d) d = abs(y2-y1)/3.0;
+            } else d=1;
+            
+            SKAction *action = [SKAction moveBy:CGVectorMake(dx, dy) duration:0.25*d];
             
             // move, then change temp array for new data
             [box[2] runAction:action];
-            tempBoxesOnScreen[c] = @[[NSNumber numberWithInt:x2],[NSNumber numberWithInt:y2],box[2]];
-            
-            boxesOnScreen = [NSMutableArray arrayWithArray:tempBoxesOnScreen];
+            tempNodesOnScreen[c] = @[[NSNumber numberWithInt:x2],[NSNumber numberWithInt:y2],box[2],box[3]];
+            [nodesOnScreen[c][3] runAction:action];
+            nodesOnScreen = [NSMutableArray arrayWithArray:tempNodesOnScreen];
 
             return 1;
             

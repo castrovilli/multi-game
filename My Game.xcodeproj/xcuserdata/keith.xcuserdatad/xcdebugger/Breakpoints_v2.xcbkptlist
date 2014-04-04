@@ -10,11 +10,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "My Game/KC2048Scene.m"
-            timestampString = "418268911.027561"
+            timestampString = "418319358.149452"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "178"
-            endingLineNumber = "178"
+            startingLineNumber = "184"
+            endingLineNumber = "184"
             landmarkName = "-updateBoxes"
             landmarkType = "5">
          </BreakpointContent>
