@@ -24,8 +24,6 @@
 		535D1B0018A70D7B007B9C06 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 535D1AFF18A70D7B007B9C06 /* XCTest.framework */; };
 		535D1B0118A70D7B007B9C06 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 535D1AD918A70D7B007B9C06 /* Foundation.framework */; };
 		535D1B0218A70D7B007B9C06 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 535D1ADD18A70D7B007B9C06 /* UIKit.framework */; };
-		535D1B0A18A70D7C007B9C06 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 535D1B0818A70D7C007B9C06 /* InfoPlist.strings */; };
-		535D1B0C18A70D7C007B9C06 /* My_GameTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 535D1B0B18A70D7C007B9C06 /* My_GameTests.m */; };
 		539FFA6518C9160300C3BDC1 /* KCFallScene.m in Sources */ = {isa = PBXBuildFile; fileRef = 539FFA6418C9160300C3BDC1 /* KCFallScene.m */; };
 		53C9192618A732A800A4D04C /* KCMenuButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C9192518A732A800A4D04C /* KCMenuButton.m */; };
 		53EF9A8218BA49C600512BE8 /* base.png in Resources */ = {isa = PBXBuildFile; fileRef = 53EF9A8118BA49C600512BE8 /* base.png */; };
@@ -66,9 +64,6 @@
 		535D1AF818A70D7B007B9C06 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		535D1AFE18A70D7B007B9C06 /* My GameTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "My GameTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		535D1AFF18A70D7B007B9C06 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
-		535D1B0718A70D7B007B9C06 /* My GameTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "My GameTests-Info.plist"; sourceTree = "<group>"; };
-		535D1B0918A70D7C007B9C06 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		535D1B0B18A70D7C007B9C06 /* My_GameTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = My_GameTests.m; sourceTree = "<group>"; };
 		539FFA6318C9160300C3BDC1 /* KCFallScene.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KCFallScene.h; sourceTree = "<group>"; };
 		539FFA6418C9160300C3BDC1 /* KCFallScene.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KCFallScene.m; sourceTree = "<group>"; };
 		53C9192418A732A800A4D04C /* KCMenuButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KCMenuButton.h; sourceTree = "<group>"; };
@@ -114,7 +109,6 @@
 			isa = PBXGroup;
 			children = (
 				535D1AE118A70D7B007B9C06 /* My Game */,
-				535D1B0518A70D7B007B9C06 /* My GameTests */,
 				535D1AD818A70D7B007B9C06 /* Frameworks */,
 				535D1AD718A70D7B007B9C06 /* Products */,
 			);
@@ -173,24 +167,6 @@
 				535D1AE418A70D7B007B9C06 /* InfoPlist.strings */,
 				535D1AE718A70D7B007B9C06 /* main.m */,
 				535D1AE918A70D7B007B9C06 /* My Game-Prefix.pch */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		535D1B0518A70D7B007B9C06 /* My GameTests */ = {
-			isa = PBXGroup;
-			children = (
-				535D1B0B18A70D7C007B9C06 /* My_GameTests.m */,
-				535D1B0618A70D7B007B9C06 /* Supporting Files */,
-			);
-			path = "My GameTests";
-			sourceTree = "<group>";
-		};
-		535D1B0618A70D7B007B9C06 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				535D1B0718A70D7B007B9C06 /* My GameTests-Info.plist */,
-				535D1B0818A70D7C007B9C06 /* InfoPlist.strings */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -287,7 +263,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				535D1B0A18A70D7C007B9C06 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -313,7 +288,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				535D1B0C18A70D7C007B9C06 /* My_GameTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,14 +316,6 @@
 				535D1AEE18A70D7B007B9C06 /* Base */,
 			);
 			name = Main.storyboard;
-			sourceTree = "<group>";
-		};
-		535D1B0818A70D7C007B9C06 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				535D1B0918A70D7C007B9C06 /* en */,
-			);
-			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -439,6 +405,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SPRITEKIT_TEXTURE_ATLAS_OUTPUT = YES;
+				TARGETED_DEVICE_FAMILY = 1;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -457,6 +424,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 				SPRITEKIT_TEXTURE_ATLAS_OUTPUT = YES;
+				TARGETED_DEVICE_FAMILY = 1;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

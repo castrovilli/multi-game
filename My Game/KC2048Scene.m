@@ -18,7 +18,7 @@
 -(bool)transitionBoxFrom:(NSArray *)initial to:(NSArray *)final;
 -(NSArray *)pt:(int)a :(int)b;
 -(NSArray *)createBox:(NSArray *)point withColor:(SKColor *)color start:(bool)start;
-
+-(int)combineNumbers:(bool)inXDimension withX:(int)x andY:(int)y andBox1:(NSArray *)box1 andBox2:(NSArray *)box2 andD:(int)d;
 @end
 
 @implementation KC2048Scene{
@@ -39,12 +39,13 @@
         
         BASEBOXCOLOR = [SKColor colorWithRed:255/255.0 green:198/255.0 blue:41/255.0 alpha:1.0];
         
+        // (x,y) E [0,3]
+        // @[x, y, box, label]
         nodesOnScreen = [NSMutableArray array];
         
         for (int a=0;a<4;a++)
             for (int b=0;b<4;b++)
                 occupiedBoxes[a][b]=0;
-            
                 
         [self createBase];
         
@@ -89,19 +90,10 @@
     
     NSMutableArray *newPoints = [NSMutableArray array];
     NSMutableArray *oldPoints = [NSMutableArray array];
+    
     int c=0;
     
     // changes due to swipes
-    
-    /*
-     *  go from swiped direction to its opposite
-     *      up: go from top to bottom, etc
-     *  save old point
-     *  keep moving x,y values until it reaches an edge or another block
-     *      update occupiedBoxes also
-     *  set that as new point
-     */
-    
     switch ([self determineDirection]){
             
         // not enough of a swipe
@@ -116,6 +108,7 @@
                     if (occupiedBoxes[x][y]){
                         int a=x, b=y;
                         oldPoints[c] = [self pt:a:b];
+                        // keep moving it right
                         while (b < 3 && !occupiedBoxes[a][b+1]) {
                             occupiedBoxes[a][b+1]=1;
                             occupiedBoxes[a][b++]=0;
@@ -172,12 +165,13 @@
                             occupiedBoxes[a++][b]=0;
                         }
                         newPoints[c++] = [self pt:a:b];
+                        
                     }
         
             break;
             
         default:
-            NSLog(@"shouldn't reach here");
+            exit(0);
     }
     
     bool moved = 0;
@@ -188,7 +182,303 @@
             if ([self transitionBoxFrom:oldPoints[i] to:newPoints[i]])
                 moved=1;
     
+    switch ([self determineDirection]){
+            
+        case -1:
+            break;
+            
+        // up
+        case 0:
+            
+            // combine boxes if necessary
+            for (int y=2;y>=0;y--)
+                for (int x=0;x<4;x++)
+                    if (occupiedBoxes[x][y] && occupiedBoxes[x][y+1]){
+                        
+                        NSArray *box1, *box2;
+                        int c=0,d=0;
+                        
+                        // get the 2 box arrays
+                        for (NSArray *array in nodesOnScreen){
+                            if (x == [array[0] intValue] && y == [array[1] intValue]){
+                                box1 = array;
+                                d=c;
+                            } else if (x == [array[0] intValue] && y+1 == [array[1] intValue])
+                                box2 = array;
+                            c+=1;
+                        }
+                        
+                        // if they have the same number, combine em
+                        if ([[box1[3] text] isEqualToString:[box2[3] text]])
+                            moved = [self combineNumbers:1 withX:x andY:y andBox1:box1 andBox2:box2 andD:d];
+                        
+                    }
+            
+            // go back and transition any other boxes that were left behind
+            for (int y=2;y>=0;y--)
+                for (int x=0;x<4;x++)
+                    if (occupiedBoxes[x][y] && !occupiedBoxes[x][y+1]){
+                        
+                        SKAction *action = [SKAction moveBy:CGVectorMake(0, [boxes[0][1][1] intValue]-[boxes[0][0][1] intValue]) duration:0.25*(1/3.0)];
+                        NSMutableArray *tempNodesOnScreen = [NSMutableArray arrayWithArray:nodesOnScreen];
+                        
+                        int c=0;
+                        for (NSArray *array in nodesOnScreen){
+                            
+                            if ([array[0] intValue] == x && [array[1] intValue] == y){
+                                
+                                [array[2] runAction:action];
+                                tempNodesOnScreen[c] = @[[NSNumber numberWithInt:x],[NSNumber numberWithInt:y+1],array[2],array[3]];
+                                
+                                [nodesOnScreen[c][3] runAction:action];
+                                nodesOnScreen = [NSMutableArray arrayWithArray:tempNodesOnScreen];
+                                
+                                occupiedBoxes[x][y]=0;
+                                occupiedBoxes[x][y+1]=1;
+                                
+                                moved = 1;
+                                
+                            }
+                            c+=1;
+                        }
+                        
+                    }
+            
+            break;
+            
+        // down
+        case 1:
+            
+            // combine boxes if necessary
+            for (int y=1;y<4;y++)
+                for (int x=0;x<4;x++)
+                    if (occupiedBoxes[x][y] && occupiedBoxes[x][y-1]){
+                        
+                        NSArray *box1, *box2;
+                        int c=0,d=0;
+                        
+                        // get the 2 box arrays
+                        for (NSArray *array in nodesOnScreen){
+                            if (x == [array[0] intValue] && y == [array[1] intValue]){
+                                box1 = array;
+                                d=c;
+                            } else if (x == [array[0] intValue] && y-1 == [array[1] intValue])
+                                box2 = array;
+                            c+=1;
+                        }
+                        
+                        // if they have the same number, combine em
+                        if ([[box1[3] text] isEqualToString:[box2[3] text]])
+                            moved = [self combineNumbers:1 withX:x andY:y andBox1:box1 andBox2:box2 andD:d];
+
+                    }
+            
+            // go back and transition any other boxes that were left behind
+            for (int y=1;y<4;y++)
+                for (int x=0;x<4;x++)
+                    if (occupiedBoxes[x][y] && !occupiedBoxes[x][y-1]){
+                        
+                        SKAction *action = [SKAction moveBy:CGVectorMake(0, [boxes[0][0][1] intValue]-[boxes[0][1][1] intValue]) duration:0.25*(1/3.0)];
+                        NSMutableArray *tempNodesOnScreen = [NSMutableArray arrayWithArray:nodesOnScreen];
+                        
+                        int c=0;
+                        for (NSArray *array in nodesOnScreen){
+                            
+                            if ([array[0] intValue] == x && [array[1] intValue] == y){
+                                
+                                [array[2] runAction:action];
+                                tempNodesOnScreen[c] = @[[NSNumber numberWithInt:x],[NSNumber numberWithInt:y-1],array[2],array[3]];
+                                
+                                [nodesOnScreen[c][3] runAction:action];
+                                nodesOnScreen = [NSMutableArray arrayWithArray:tempNodesOnScreen];
+                                
+                                occupiedBoxes[x][y]=0;
+                                occupiedBoxes[x][y-1]=1;
+                                
+                                moved = 1;
+                                
+                            }
+                            c+=1;
+                        }
+                        
+                    }
+            
+            break;
+            
+        // left
+        case 2:
+            
+            // combine boxes if necessary
+            for (int x=1;x<4;x++)
+                for (int y=0;y<4;y++)
+                    if (occupiedBoxes[x][y] && occupiedBoxes[x-1][y]){
+                        
+                        NSArray *box1, *box2;
+                        int c=0,d=0;
+                        
+                        // get the 2 box arrays
+                        for (NSArray *array in nodesOnScreen){
+                            if (x == [array[0] intValue] && y == [array[1] intValue]){
+                                box1 = array;
+                                d=c;
+                            } else if (x-1 == [array[0] intValue] && y == [array[1] intValue])
+                                box2 = array;
+                            c+=1;
+                        }
+                        
+                        // if they have the same number, combine em
+                        if ([[box1[3] text] isEqualToString:[box2[3] text]])
+                            moved = [self combineNumbers:1 withX:x andY:y andBox1:box1 andBox2:box2 andD:d];
+                        
+                    }
+            
+            // go back and transition any other boxes that were left behind
+            for (int x=1;x<4;x++)
+                for (int y=0;y<4;y++)
+                    if (occupiedBoxes[x][y] && !occupiedBoxes[x-1][y]){
+                        
+                        SKAction *action = [SKAction moveBy:CGVectorMake([boxes[0][0][0] intValue]-[boxes[1][0][0] intValue], 0) duration:0.25*(1/3.0)];
+                        NSMutableArray *tempNodesOnScreen = [NSMutableArray arrayWithArray:nodesOnScreen];
+                        
+                        int c=0;
+                        for (NSArray *array in nodesOnScreen){
+                            
+                            if ([array[0] intValue] == x && [array[1] intValue] == y){
+                                
+                                [array[2] runAction:action];
+                                tempNodesOnScreen[c] = @[[NSNumber numberWithInt:x-1],[NSNumber numberWithInt:y],array[2],array[3]];
+                                
+                                [nodesOnScreen[c][3] runAction:action];
+                                nodesOnScreen = [NSMutableArray arrayWithArray:tempNodesOnScreen];
+                                
+                                occupiedBoxes[x][y]=0;
+                                occupiedBoxes[x-1][y]=1;
+                                
+                                moved = 1;
+                                
+                            }
+                            c+=1;
+                        }
+                        
+                    }
+
+            
+            break;
+            
+        // right
+        case 3:
+            
+            // combine boxes if necessary
+            for (int x=2;x>=0;x--)
+                for (int y=0;y<4;y++)
+                    if (occupiedBoxes[x][y] && occupiedBoxes[x+1][y]){
+                        
+                        NSArray *box1, *box2;
+                        int c=0,d=0;
+                        
+                        // get the 2 box arrays
+                        for (NSArray *array in nodesOnScreen){
+                            if (x == [array[0] intValue] && y == [array[1] intValue]){
+                                box1 = array;
+                                d=c;
+                            } else if (x+1 == [array[0] intValue] && y == [array[1] intValue])
+                                box2 = array;
+                            c+=1;
+                        }
+                        
+                        // if they have the same number, combine em
+                        if ([[box1[3] text] isEqualToString:[box2[3] text]])
+                            moved = [self combineNumbers:1 withX:x andY:y andBox1:box1 andBox2:box2 andD:d];
+                        
+                    }
+            
+            // go back and transition any other boxes that were left behind
+            for (int x=2;x>=0;x--)
+                for (int y=0;y<4;y++)
+                    if (occupiedBoxes[x][y] && !occupiedBoxes[x+1][y]){
+                        
+                        SKAction *action = [SKAction moveBy:CGVectorMake([boxes[1][0][0] intValue]-[boxes[0][0][0] intValue], 0) duration:0.25*(1/3.0)];
+                        NSMutableArray *tempNodesOnScreen = [NSMutableArray arrayWithArray:nodesOnScreen];
+                        
+                        int c=0;
+                        for (NSArray *array in nodesOnScreen){
+                            
+                            if ([array[0] intValue] == x && [array[1] intValue] == y){
+                                
+                                [array[2] runAction:action];
+                                tempNodesOnScreen[c] = @[[NSNumber numberWithInt:x+1],[NSNumber numberWithInt:y],array[2],array[3]];
+                                
+                                [nodesOnScreen[c][3] runAction:action];
+                                nodesOnScreen = [NSMutableArray arrayWithArray:tempNodesOnScreen];
+                                
+                                occupiedBoxes[x][y]=0;
+                                occupiedBoxes[x+1][y]=1;
+                                
+                                moved = 1;
+                                
+                            }
+                            c+=1;
+                        }
+                        
+                    }
+
+            
+            break;
+            
+        default:
+            exit(0);
+            
+    }
+    
     return moved;
+    
+}
+
+-(int)combineNumbers:(bool)inXDimension withX:(int)x andY:(int)y andBox1:(NSArray *)box1 andBox2:(NSArray *)box2 andD:(int)d{
+    
+    CGFloat dx,dy;
+    float t=0.2;
+    
+    if (inXDimension){
+        int n1 = [box1[0] intValue];
+        int n2 = [box2[0] intValue];
+        dy = 0;
+        dx = [boxes[0][n2][0] floatValue] - [boxes[0][n1][0] floatValue];
+    } else {
+        int n1 = [box1[1] intValue];
+        int n2 = [box2[1] intValue];
+        dx = 0;
+        dy = [boxes[0][n2][1] floatValue] - [boxes[0][n1][1] floatValue];
+    }
+    
+    SKLabelNode *mainLabel = box2[3];
+    SKShapeNode *oldBox = box1[2];
+    SKLabelNode *oldLabel = box1[3];
+    
+    SKAction *oldAction1 = [SKAction fadeOutWithDuration:t];
+    SKAction *oldAction2 = [SKAction moveByX:dx y:0.0 duration:t];
+    SKAction *oldAction3 = [SKAction runBlock:^{
+        [oldBox removeFromParent];
+        [oldLabel removeFromParent];
+    }];
+    
+    SKAction *newAction1 = [SKAction fadeOutWithDuration:t];
+    SKAction *newAction2 = [SKAction runBlock:^{
+        mainLabel.text = [NSString stringWithFormat:@"%d",[mainLabel.text intValue]*2];
+        [mainLabel setAlpha:0.0];
+    }];
+    SKAction *newAction3 = [SKAction fadeAlphaTo:1.0 duration:t];
+    
+    [oldLabel runAction:[SKAction group:@[oldAction1,oldAction2]]];
+    [oldBox runAction:[SKAction sequence:@[[SKAction group:@[oldAction1,oldAction2]],oldAction3]]];
+    
+    [mainLabel runAction:[SKAction sequence:@[newAction1,newAction2,newAction3]]];
+    
+    [nodesOnScreen removeObjectAtIndex:d];
+    
+    occupiedBoxes[x][y]=0;
+    
+    return 1;
     
 }
 
@@ -265,10 +555,12 @@
         else [label setText:@"4"];
         
         box.alpha = 0.0;
+        label.alpha = 0.0;
         SKAction *action = [SKAction fadeInWithDuration:0.4];
         
         [box runAction:action];
         [label runAction:action];
+        
         [self addChild:box];
         [self addChild:label];
         
@@ -284,9 +576,8 @@
     int x1 = [initial[0] intValue], y1 = [initial[1] intValue];
     int x2 = [final[0] intValue], y2 = [final[1] intValue];
     
-    int c=0;
-    
     NSMutableArray *tempNodesOnScreen = [NSMutableArray arrayWithArray:nodesOnScreen];
+    int c=0;
     
     // cycle through boxes that are drawn already
     for (NSArray *box in nodesOnScreen){
@@ -312,7 +603,7 @@
             tempNodesOnScreen[c] = @[[NSNumber numberWithInt:x2],[NSNumber numberWithInt:y2],box[2],box[3]];
             [nodesOnScreen[c][3] runAction:action];
             nodesOnScreen = [NSMutableArray arrayWithArray:tempNodesOnScreen];
-
+            
             return 1;
             
         }
@@ -345,7 +636,7 @@
 }
 // start up
 -(void)createBase{
-        
+    
     SKSpriteNode *box = [SKSpriteNode spriteNodeWithColor:[SKColor colorWithRed:(255/255.0) green:(143/255.0) blue:(0/255.0) alpha:1] size:CGSizeMake(300, 300)];
     [box setPosition:CGPointMake(self.frame.size.width/2.0,7*self.frame.size.height/18.0)];
     [self addChild:box];

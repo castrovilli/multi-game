@@ -9,7 +9,7 @@
 #import "KCFallScene.h"
 #import "KCMenuScene.h"
 
-const float BETWEENOBSTACLES = 0.2;
+int BETWEENOBSTACLES = 300;
 static const uint32_t playerCategory = 0x1 << 0;
 static const uint32_t otherCategory = 0x1 << 1;
 
@@ -27,9 +27,8 @@ static const uint32_t otherCategory = 0x1 << 1;
 
 @implementation KCFallScene{
 	float lastObstacleAdditionTimeInterval,lastUpdateTimeInterval;
-	int score;
-	bool popupActionDone;
-	bool notTappedYet;
+	int score,c;
+	bool popupActionDone, notTappedYet, changing;
 }
 
 #pragma mark init
@@ -39,11 +38,11 @@ static const uint32_t otherCategory = 0x1 << 1;
 	if (self = [super initWithSize:size]){
 		
 		[self setBackgroundColor:[SKColor colorWithRed:(161/255.0) green:(202/255.0) blue:(241/255.0) alpha:1.0]];
-		self.physicsWorld.gravity = CGVectorMake(0.0, -3.0);
+		self.physicsWorld.gravity = CGVectorMake(0.0, -2.5);
 		self.physicsWorld.contactDelegate = self;
 		self.fallingObjects = [NSMutableArray array];
-		score = 0;
-		notTappedYet = true;
+		score = c = 0;
+		notTappedYet = changing = true;
 		popupActionDone = false;
 		
 		lastObstacleAdditionTimeInterval = 0.0;
@@ -88,9 +87,37 @@ static const uint32_t otherCategory = 0x1 << 1;
 		
 	} else if ([node isEqualToString:@"fallingObject"]){
         
+        float x,y;
+        
         SKSpriteNode *object = [SKSpriteNode spriteNodeWithImageNamed:@"circle"];
         [object setScale:0.5];
-        [object setPosition:CGPointMake(floorf(((double)arc4random() / 0x100000000) * (self.frame.size.width - object.frame.size.width)) + object.frame.size.width/2.0, self.frame.size.height + object.frame.size.height/2.0)];
+        
+        y = self.frame.size.height + object.frame.size.height/2.0;
+        
+        if (![self.fallingObjects count]){
+            x = floorf(((double)arc4random() / 0x100000000) * (self.frame.size.width - object.frame.size.width)) + object.frame.size.width/2.0;
+        } else {
+            
+            float deviation = arc4random_uniform(50) + object.frame.size.width/2.0;
+            
+            if ([self.fallingObjects count]==1)
+                x = [self.fallingObjects[0] position].x + (arc4random_uniform(2)==0 ? -1 : 1) * deviation;
+            else {
+                if ([self.fallingObjects[[self.fallingObjects count]-1] position].x < [self.fallingObjects[[self.fallingObjects count]-2] position].x)
+                    x = [self.fallingObjects[[self.fallingObjects count]-1] position].x + (arc4random_uniform(7)==0 ? 1 : -1) * deviation;
+                else
+                    x = [self.fallingObjects[[self.fallingObjects count]-1] position].x + (arc4random_uniform(7)==0 ? -1 : 1) * deviation;
+            }
+            
+            if (x - object.frame.size.width/2.0 <= 0){
+                x = object.frame.size.width + [self.fallingObjects[[self.fallingObjects count]-1] position].x;
+            } else if (x + object.frame.size.width/2.0 >= self.frame.size.width){
+                x = [self.fallingObjects[[self.fallingObjects count]-1] position].x-object.frame.size.width;
+            }
+            
+        }
+        
+        [object setPosition:CGPointMake(x, y)];
         [object setPhysicsBody:[SKPhysicsBody bodyWithCircleOfRadius:object.frame.size.width/2.0]];
         object.physicsBody.dynamic = true;
         [self addChild:object];
@@ -196,12 +223,11 @@ static const uint32_t otherCategory = 0x1 << 1;
 	if (self.running && [self.fallingObjects count]!=0){
 		SKSpriteNode *object = self.fallingObjects[0];
 		if (object.position.y + object.frame.size.height < self.player.position.y) [self createNode:@"popup"];
-		object = nil;
 	}
 		
 	CFTimeInterval timeSinceLast = currentTime - lastUpdateTimeInterval;
 	lastUpdateTimeInterval = currentTime;
-	if (timeSinceLast > BETWEENOBSTACLES) {
+	if (timeSinceLast > BETWEENOBSTACLES/1000.0) {
 		timeSinceLast = 1.0 / 60.0;
 		lastUpdateTimeInterval = currentTime;
 	} [self updateWithTimeSinceLastUpdate:timeSinceLast];
@@ -212,7 +238,18 @@ static const uint32_t otherCategory = 0x1 << 1;
 	
 	if (self.running){
 		lastObstacleAdditionTimeInterval += timeSinceLast;
-		if (lastObstacleAdditionTimeInterval > BETWEENOBSTACLES) {
+		if (lastObstacleAdditionTimeInterval > BETWEENOBSTACLES/1000.0) {
+            if (changing){
+                c+=1;
+                // every 15 balls, decrease interval, increase gravity
+                if (c%15==0){
+                    BETWEENOBSTACLES -= 15;
+                    [self.physicsWorld setGravity:CGVectorMake(0.0, self.physicsWorld.gravity.dy-0.1)];
+                    c=0;
+                }
+                if (BETWEENOBSTACLES <= 100.0) changing=false;
+            }
+            
 			lastObstacleAdditionTimeInterval = 0;
 			[self createNode:@"fallingObject"];
 		}
